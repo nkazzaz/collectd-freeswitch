@@ -25,8 +25,8 @@
 
 /*
 #include "utils_match.h"
-#include <esl.h>
 */
+#include <esl.h>
 
 #define FREESWITCH_DEF_HOST "127.0.0.1"
 #define FREESWITCH_DEF_PORT "8021"
@@ -87,18 +87,14 @@ static int freeswitch_read (void)
 	if (password == NULL)
 		password = FREESWITCH_DEF_PASSWORD;
 
-/*
 	esl_handle_t handle = {{0}};
-	esl_connect(&handle, host, port, password);
+	esl_connect(&handle, host, atoi(port), password);
 
 	esl_send_recv(&handle, "api show channels\n\n");
-*/
 	
 	// DO YOUR THING HERE TO PARSE &handle
 	
-/*
 	esl_disconnect(&handle);
-*/
 
 DEBUG ("FreeSWITCH SUBMIT: res-public fs_channels 3 5");
 

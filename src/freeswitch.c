@@ -88,15 +88,16 @@ static int freeswitch_read (void)
 		password = FREESWITCH_DEF_PASSWORD;
 
 	esl_handle_t handle = {{0}};
-	esl_connect(&handle, host, atoi(port), password);
+	if (esl_connect(&handle, host, atoi(port), password)) {
+		DEBUG ("Error connecting to FreeSWITCH ESL interface [%s]\n", handle.err);
+		return -1;
+	}
 
 	esl_send_recv(&handle, "api show channels\n\n");
 	
 	// DO YOUR THING HERE TO PARSE &handle
 	
 	esl_disconnect(&handle);
-
-DEBUG ("XFreeSWITCH SUBMIT: res-public fs_channels 3 5");
 
 	freeswitch_submit ("res-public", "fs_channels", 3, 5);
 

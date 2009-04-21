@@ -96,7 +96,7 @@ static int freeswitch_read (void)
 	
 	esl_disconnect(&handle);
 
-DEBUG ("FreeSWITCH SUBMIT: res-public fs_channels 3 5");
+DEBUG ("XFreeSWITCH SUBMIT: res-public fs_channels 3 5");
 
 	freeswitch_submit ("res-public", "fs_channels", 3, 5);
 

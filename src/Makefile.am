@@ -311,6 +311,14 @@ collectd_LDADD += "-dlopen" filecount.la
 collectd_DEPENDENCIES += filecount.la
 endif
 
+if BUILD_PLUGIN_FREESWITCH
+pkglib_LTLIBRARIES += freeswitch.la
+freeswitch_la_SOURCES = freeswitch.c
+freeswitch_la_LDFLAGS = -module -avoid-version
+collectd_LDADD += "-dlopen" freeswitch.la
+collectd_DEPENDENCIES += freeswitch.la
+endif
+
 if BUILD_PLUGIN_GMOND
 pkglib_LTLIBRARIES += gmond.la
 gmond_la_SOURCES = gmond.c

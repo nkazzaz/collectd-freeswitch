@@ -51,7 +51,7 @@ static char *freeswitch_host = NULL;
 static char freeswitch_port[16];
 static char *freeswitch_password = NULL;
 
-static void freeswitch_submit (const char *type_instance, gauge_t inbound, gauge_t outbound)
+static void freeswitch_submit (const char *profile, const char *type, gauge_t inbound, gauge_t outbound)
 {
 	value_t values[2];
 	value_list_t vl = VALUE_LIST_INIT;
@@ -63,8 +63,8 @@ static void freeswitch_submit (const char *type_instance, gauge_t inbound, gauge
 	vl.values_len = 2;
 	sstrncpy (vl.host, hostname_g, sizeof (vl.host));
 	sstrncpy (vl.plugin, "freeswitch", sizeof (vl.plugin));
-	sstrncpy (vl.type, "freeswitch", sizeof (vl.type));
-        sstrncpy (vl.type_instance, type_instance, sizeof (vl.type_instance));
+	sstrncpy (vl.type, type, sizeof (vl.type));
+        sstrncpy (vl.type_instance, profile, sizeof (vl.type_instance));
 
 	plugin_dispatch_values (&vl);
 } /* void freeswitch_submit */
@@ -100,7 +100,7 @@ static int freeswitch_read (void)
 	esl_disconnect(&handle);
 */
 
-	freeswitch_submit ("profilename", 0, 0);
+	freeswitch_submit ("res-public", "channels", 3, 5);
 
 	return (0);
 } /* int freeswitch_read */

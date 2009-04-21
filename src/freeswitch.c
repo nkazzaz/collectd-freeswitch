@@ -100,7 +100,9 @@ static int freeswitch_read (void)
 	esl_disconnect(&handle);
 */
 
-	freeswitch_submit ("res-public", "channels", 3, 5);
+DEBUG ("FreeSWITCH SUBMIT: res-public fs_channels 3 5");
+
+	freeswitch_submit ("res-public", "fs_channels", 3, 5);
 
 	return (0);
 } /* int freeswitch_read */

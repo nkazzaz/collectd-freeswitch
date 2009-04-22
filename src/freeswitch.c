@@ -51,7 +51,7 @@ static esl_handle_t handle = {{0}};
 // static int thread_running = 0;
 
 static char *freeswitch_host = NULL;
-static char freeswitch_port[16];
+static char *freeswitch_port = NULL;
 static char *freeswitch_password = NULL;
 
 static void freeswitch_submit (const char *profile, const char *type, gauge_t inbound, gauge_t outbound)
@@ -74,24 +74,12 @@ static void freeswitch_submit (const char *profile, const char *type, gauge_t in
 
 static int freeswitch_read (void)
 {
+/*
 	const char *host;
 	const char *port;
 	const char *password;
+*/
 
-	/* Set some default configuration variables */
-	host = freeswitch_host;
-	if (host == NULL)
-		host = FREESWITCH_DEF_HOST;
-
-	port = freeswitch_port;
-	if (port == NULL)
-		port = FREESWITCH_DEF_PORT;
-
-	password = freeswitch_password;
-	if (password == NULL)
-		password = FREESWITCH_DEF_PASSWORD;
-
-//
 
 	esl_send_recv(&handle, "api show channels\n\n");
 	if (handle.last_sr_event && handle.last_sr_event->body) {
@@ -113,12 +101,9 @@ static int freeswitch_config (const char *key, const char *value)
         }
         else if (strcasecmp ("Port", key) == 0)
 	{
-		int port = (int) (atof (value));
-		if ((port > 0) && (port <= 65535))
-			ssnprintf (freeswitch_port, sizeof (freeswitch_port),
-					"%i", port);
-		else
-			sstrncpy (freeswitch_port, value, sizeof (freeswitch_port));
+		if (freeswitch_port != NULL)
+			free (freeswitch_port);
+		freeswitch_port = strdup (value);
 	}
         else if (strcasecmp ("Password", key) == 0)
         {
@@ -160,8 +145,23 @@ static void *msg_thread_run(esl_thread_t *me, void *obj)
 
 static int freeswitch_init (void)
 {
-	esl_connect(&handle, "172.16.235.98", 8021, "ClueCon");
+	/* Set some default configuration variables */
+	if (freeswitch_host == NULL)
+		freeswitch_host = FREESWITCH_DEF_HOST;
+
+	if (freeswitch_port == NULL)
+		freeswitch_port = "8021";
+
+	if (freeswitch_password == NULL)
+		freeswitch_password = FREESWITCH_DEF_PASSWORD;
+
+	/* Connect to FreeSWITCH over ESL */
+	DEBUG ("Making ESL connection to %s %s %s\n", freeswitch_host, freeswitch_port, freeswitch_password);
+	esl_connect(&handle, freeswitch_host, atoi(freeswitch_port), freeswitch_password);
+
+	/* Start a seperate thread for incoming events */
 	//esl_thread_create_detached(msg_thread_run, &handle);
+
 	return(0);
 } /* int freeswitch_init */
 

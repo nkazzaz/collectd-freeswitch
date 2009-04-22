@@ -75,6 +75,7 @@ static int freeswitch_read (void)
 	const char *port;
 	const char *password;
 
+	/* Set some default configuration variables */
 	host = freeswitch_host;
 	if (host == NULL)
 		host = FREESWITCH_DEF_HOST;
@@ -88,15 +89,20 @@ static int freeswitch_read (void)
 		password = FREESWITCH_DEF_PASSWORD;
 
 	esl_handle_t handle = {{0}};
+
+	/* Connect from freeswitch_init for a persistent ESL connection */
 	if (esl_connect(&handle, host, atoi(port), password)) {
 		DEBUG ("Error connecting to FreeSWITCH ESL interface [%s]\n", handle.err);
 		return -1;
 	}
 
 	esl_send_recv(&handle, "api show channels\n\n");
+
+	if (handle.last_sr_event && handle.last_sr_event->body) {
+		// handle.last_sr_event->body now contains the string with all active channels...
+	}
 	
-	// DO YOUR THING HERE TO PARSE &handle
-	
+	/* Disconnect from freeswitch_shutdown for a persistent ESL connection */
 	esl_disconnect(&handle);
 
 	freeswitch_submit ("res-public", "fs_channels", 3, 5);
@@ -134,9 +140,21 @@ static int freeswitch_config (const char *key, const char *value)
         return (0);
 } /* int freeswitch_config */
 
+static int freeswitch_init (void)
+{
+	return(0);
+} /* int freeswitch_init */
+
+static int freeswitch_shutdown (void)
+{
+	return(0);
+} /* int freeswitch_shutdown */
+
 void module_register (void)
 {
         plugin_register_config ("freeswitch", freeswitch_config,
 			config_keys, config_keys_num);
+	plugin_register_init ("freeswitch", freeswitch_init);
+	plugin_register_shutdown ("freeswitch", freeswitch_shutdown);
 	plugin_register_read ("freeswitch", freeswitch_read);
 } /* void module_register */

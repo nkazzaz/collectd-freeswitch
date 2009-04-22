@@ -26,7 +26,6 @@
 /*
 #include "utils_match.h"
 */
-#include <pthread.h>
 #include <esl.h>
 
 #define FREESWITCH_DEF_HOST "127.0.0.1"
@@ -47,8 +46,8 @@ typedef struct profilename
 	struct profilename *next;
 } profilename_t;
 
-static pthread_t esl_thread;
-static int esl_thread_init = 0;
+static esl_handle_t handle = {{0}};
+static int thread_running = 0;
 
 // static profilename_t *first_profilename = NULL;
 static char *freeswitch_host = NULL;
@@ -92,22 +91,27 @@ static int freeswitch_read (void)
 	if (password == NULL)
 		password = FREESWITCH_DEF_PASSWORD;
 
-	esl_handle_t handle = {{0}};
+//	esl_handle_t handle = {{0}};
 
 	/* Connect from freeswitch_init for a persistent ESL connection */
+/*
 	if (esl_connect(&handle, host, atoi(port), password)) {
 		DEBUG ("Error connecting to FreeSWITCH ESL interface [%s]\n", handle.err);
 		return -1;
 	}
-
+*/
 	esl_send_recv(&handle, "api show channels\n\n");
 
 	if (handle.last_sr_event && handle.last_sr_event->body) {
+
+		DEBUG ("OUTPUT FROM FREESWITCH:\n%s\n\n", handle.last_sr_event->body);
+
 		// handle.last_sr_event->body now contains the string with all active channels...
 	}
-	
+
+
 	/* Disconnect from freeswitch_shutdown for a persistent ESL connection */
-	esl_disconnect(&handle);
+//	esl_disconnect(&handle);
 
 	freeswitch_submit ("res-public", "fs_channels", 3, 5);
 
@@ -144,57 +148,32 @@ static int freeswitch_config (const char *key, const char *value)
         return (0);
 } /* int freeswitch_config */
 
-static void *esl_child_loop (void __attribute__((unused)) *dummy)
+static void *msg_thread_run(esl_thread_t *me, void *obj)
 {
+	esl_handle_t *handle = (esl_handle_t *) obj;
+	thread_running = 1;
 
-	DEBUG ("child is exiting");
+	while (thread_running && handle->connected)
+	{
+		//esl_status_t status = esl_recv_event_timed(handle, 10, 1, NULL);
+		usleep(1000);
+	}
 
-	esl_thread_init = 0;
-	pthread_exit (NULL);
-
+	thread_running = 0;
 	return (NULL);
-} /* void *esl_child_loop */
+} /* void *msg_thread_run */
 
 static int freeswitch_init (void)
 {
-	/* clean up an old thread */
-	int status;
-
-/*
-        pthread_mutex_lock (&traffic_mutex);
-        tr_queries   = 0;
-        tr_responses = 0;
-        pthread_mutex_unlock (&traffic_mutex);
-*/
-
-	if (esl_thread_init != 0)
-		return (-1);
-
-	status = pthread_create (&esl_thread, NULL, esl_child_loop,
-			(void *) 0);
-	if (status != 0)
-	{
-		char errbuf[1024];
-		ERROR ("freeswitch plugin: pthread_create failed: %s",
-			sstrerror (errno, errbuf, sizeof (errbuf)));
-		return (-1);
-	}
-
-	esl_thread_init = 1;
-
+	esl_connect(&handle, "172.16.235.98", 8021, "ClueCon");
+	esl_thread_create_detached(msg_thread_run, &handle);
 	return(0);
 } /* int freeswitch_init */
-
-static int freeswitch_shutdown (void)
-{
-	return(0);
-} /* int freeswitch_shutdown */
 
 void module_register (void)
 {
         plugin_register_config ("freeswitch", freeswitch_config,
 			config_keys, config_keys_num);
 	plugin_register_init ("freeswitch", freeswitch_init);
-	plugin_register_shutdown ("freeswitch", freeswitch_shutdown);
 	plugin_register_read ("freeswitch", freeswitch_read);
 } /* void module_register */

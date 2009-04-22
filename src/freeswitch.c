@@ -17,6 +17,7 @@
  *
  * Authors:
  *   Florian octo Forster <octo at verplant.org>
+ *   Leon de Rooij <leon@scarlet-internet.nl>
  **/
 
 #include "collectd.h"
@@ -47,9 +48,8 @@ typedef struct profilename
 } profilename_t;
 
 static esl_handle_t handle = {{0}};
-static int thread_running = 0;
+// static int thread_running = 0;
 
-// static profilename_t *first_profilename = NULL;
 static char *freeswitch_host = NULL;
 static char freeswitch_port[16];
 static char *freeswitch_password = NULL;
@@ -91,27 +91,12 @@ static int freeswitch_read (void)
 	if (password == NULL)
 		password = FREESWITCH_DEF_PASSWORD;
 
-//	esl_handle_t handle = {{0}};
+//
 
-	/* Connect from freeswitch_init for a persistent ESL connection */
-/*
-	if (esl_connect(&handle, host, atoi(port), password)) {
-		DEBUG ("Error connecting to FreeSWITCH ESL interface [%s]\n", handle.err);
-		return -1;
-	}
-*/
 	esl_send_recv(&handle, "api show channels\n\n");
-
 	if (handle.last_sr_event && handle.last_sr_event->body) {
-
 		DEBUG ("OUTPUT FROM FREESWITCH:\n%s\n\n", handle.last_sr_event->body);
-
-		// handle.last_sr_event->body now contains the string with all active channels...
 	}
-
-
-	/* Disconnect from freeswitch_shutdown for a persistent ESL connection */
-//	esl_disconnect(&handle);
 
 	freeswitch_submit ("res-public", "fs_channels", 3, 5);
 
@@ -148,25 +133,35 @@ static int freeswitch_config (const char *key, const char *value)
         return (0);
 } /* int freeswitch_config */
 
+/*
 static void *msg_thread_run(esl_thread_t *me, void *obj)
 {
 	esl_handle_t *handle = (esl_handle_t *) obj;
 	thread_running = 1;
 
+	// Maybe do some more in this loop later, like receive subscribed events,
+	// and create statistics of them
+	// see fs_cli.c function static void *msg_thread_run(), around line 198
 	while (thread_running && handle->connected)
 	{
-		//esl_status_t status = esl_recv_event_timed(handle, 10, 1, NULL);
+		esl_status_t status = esl_recv_event_timed(handle, 10, 1, NULL);
+		if (status == ESL_FAIL)
+		{
+			//DEBUG ("Disconnected [%s]\n", ESL_LOG_WARNING); // todo fixit
+			DEBUG ("Disconnected [%s]\n", "ESL_LOG_WARNING");
+			thread_running = 0;
+		}
 		usleep(1000);
 	}
 
 	thread_running = 0;
 	return (NULL);
-} /* void *msg_thread_run */
+} */ /* void *msg_thread_run */
 
 static int freeswitch_init (void)
 {
 	esl_connect(&handle, "172.16.235.98", 8021, "ClueCon");
-	esl_thread_create_detached(msg_thread_run, &handle);
+	//esl_thread_create_detached(msg_thread_run, &handle);
 	return(0);
 } /* int freeswitch_init */
 

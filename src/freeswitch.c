@@ -26,6 +26,7 @@
 /*
 #include "utils_match.h"
 */
+#include <pthread.h>
 #include <esl.h>
 
 #define FREESWITCH_DEF_HOST "127.0.0.1"
@@ -45,6 +46,9 @@ typedef struct profilename
 	char *name;
 	struct profilename *next;
 } profilename_t;
+
+static pthread_t esl_thread;
+static int esl_thread_init = 0;
 
 // static profilename_t *first_profilename = NULL;
 static char *freeswitch_host = NULL;
@@ -140,8 +144,44 @@ static int freeswitch_config (const char *key, const char *value)
         return (0);
 } /* int freeswitch_config */
 
+static void *esl_child_loop (void __attribute__((unused)) *dummy)
+{
+
+	DEBUG ("child is exiting");
+
+	esl_thread_init = 0;
+	pthread_exit (NULL);
+
+	return (NULL);
+} /* void *esl_child_loop */
+
 static int freeswitch_init (void)
 {
+	/* clean up an old thread */
+	int status;
+
+/*
+        pthread_mutex_lock (&traffic_mutex);
+        tr_queries   = 0;
+        tr_responses = 0;
+        pthread_mutex_unlock (&traffic_mutex);
+*/
+
+	if (esl_thread_init != 0)
+		return (-1);
+
+	status = pthread_create (&esl_thread, NULL, esl_child_loop,
+			(void *) 0);
+	if (status != 0)
+	{
+		char errbuf[1024];
+		ERROR ("freeswitch plugin: pthread_create failed: %s",
+			sstrerror (errno, errbuf, sizeof (errbuf)));
+		return (-1);
+	}
+
+	esl_thread_init = 1;
+
 	return(0);
 } /* int freeswitch_init */
 

@@ -117,6 +117,19 @@ static void fs_match_free (fs_match_t *fm)
 	sfree (fm);
 } /* void fs_match_free */
 
+static void fs_command_free (fs_command_t *fc)
+{
+	if (fc == NULL)
+		return;
+
+	sfree (fc->line);
+	sfree (fc->instance);
+	sfree (fc->buffer);
+	fs_match_free (fc->matches);
+	fs_command_free (fc->next);
+	sfree (fc);
+} /* void fs_command_free */
+
 static int fs_config_add_match_dstype (int *dstype_ret, oconfig_item_t *ci)
 {
 	DEBUG ("freeswitch plugin: in fs_config_add_match_dstype");
@@ -289,6 +302,7 @@ static int fs_config_add_command (oconfig_item_t *ci)
 
 	command->line = NULL;
 	command->line = strdup (ci->values[0].value.string);
+
 	if (command->line == NULL)
 	{
 		ERROR ("freeswitch plugin: strdup failed.");
@@ -314,6 +328,12 @@ static int fs_config_add_command (oconfig_item_t *ci)
 
 		if (status != 0)
 			break;
+	}
+
+	if (status != 0)
+	{
+		fs_command_free (command);
+		return (status);
 	}
 
 	/* Add the new command to the linked list */
@@ -388,7 +408,7 @@ static int fs_complex_config (oconfig_item_t *ci)
 } /* int fs_complex_config */
 
 static void fs_submit (const fs_command_t *fc,
-	const fs_match_t *fm, const cu_match_value_t *fmv)
+	const fs_match_t *fm, const cu_match_value_t *mv)
 {
 	DEBUG ("freeswitch plugin: in fs_submit");
 
@@ -398,13 +418,13 @@ static void fs_submit (const fs_command_t *fc,
 	DEBUG ("fm->type");
 	DEBUG (fm->type);
 
-	DEBUG ("fmv->value");
-	DEBUG (fmv->value);
+	DEBUG ("mv->value");
+	//DEBUG (mv->value);
 
 	value_t values[1];
 	value_list_t vl = VALUE_LIST_INIT;
 
-	values[0] = fmv->value;
+	values[0] = mv->value;
 
 	vl.values = values;
 	vl.values_len = 1;
@@ -439,7 +459,8 @@ static int fs_read_command (fs_command_t *fc)
 		DEBUG ("freeswitch plugin: output from esl (truncated):\n%s\n\n", esl_handle.last_sr_event->body);
 		sfree(fc->buffer);
 		fc->buffer = strdup(esl_handle.last_sr_event->body);
-		fc->buffer_fill = 1; // ??
+		fc->buffer_size = strlen(fc->buffer);
+		fc->buffer_fill = 1;
 	}
 
 	for (fm = fc->matches; fm != NULL; fm = fm->next)
@@ -524,6 +545,8 @@ static int fs_shutdown (void)
 {
 	DEBUG ("freeswitch plugin: disconnecting");
 	esl_disconnect(&esl_handle);
+	fs_command_free (fs_commands_g);
+	fs_commands_g = NULL;
 	return (0);
 } /* int fs_shutdown */
 

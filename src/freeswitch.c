@@ -35,7 +35,7 @@
  *		Host "127.0.0.1"
  *		Port "8021"
  *		Pass "ClueCon"
- *		<Command "sofia status profile res-public">
+ *		<Command "api sofia status profile res-public">
  *			Instance "profile-sofia-res-public"
  *			<Match>
  *				Regex "\\<CALLS-IN\s+(\d+)\\>"
@@ -66,7 +66,7 @@ struct fs_command_s;
 typedef struct fs_command_s fs_command_t;
 struct fs_command_s
 {
-	char *line;		// "sofia status profile res-public"
+	char *line;		// "api sofia status profile res-public"
 	char *instance;		// "profile-sofia-res-public"
 	char *buffer;		// <output from esl command as a char*>
 	size_t buffer_size;	// sizeof(*buffer)
@@ -119,6 +119,8 @@ static void fs_match_free (fs_match_t *fm)
 
 static int fs_config_add_match_dstype (int *dstype_ret, oconfig_item_t *ci)
 {
+	DEBUG ("freeswitch plugin: in fs_config_add_match_dstype");
+
 	int dstype;
 
 	if ((ci->values_num != 1) || (ci->values[0].type != OCONFIG_TYPE_STRING))
@@ -171,6 +173,8 @@ static int fs_config_add_match_dstype (int *dstype_ret, oconfig_item_t *ci)
 
 static int fs_config_add_match (fs_command_t *fs_command, oconfig_item_t *ci)
 {
+	DEBUG ("freeswitch plugin: in fs_config_add_match");
+
 	fs_match_t *fs_match;
 	int status;
 	int i;
@@ -263,6 +267,8 @@ static int fs_config_add_match (fs_command_t *fs_command, oconfig_item_t *ci)
 
 static int fs_config_add_command (oconfig_item_t *ci)
 {
+	DEBUG ("freeswitch plugin: in fs_config_add_command");
+
 	fs_command_t *command;
 	int status;
 	int i;
@@ -280,10 +286,10 @@ static int fs_config_add_command (oconfig_item_t *ci)
 		return (-1);
 	}
 	memset (command, 0, sizeof (*command));
-	command->line = NULL;
 
-	command->instance = strdup (ci->values[0].value.string);
-	if (command->instance == NULL)
+	command->line = NULL;
+	command->line = strdup (ci->values[0].value.string);
+	if (command->line == NULL)
 	{
 		ERROR ("freeswitch plugin: strdup failed.");
 		sfree (command);
@@ -296,7 +302,9 @@ static int fs_config_add_command (oconfig_item_t *ci)
 	{
 		oconfig_item_t *child = ci->children + i;
 
-		if (strcasecmp ("Match", child->key) == 0)
+		if (strcasecmp ("Instance", child->key) == 0)
+			status = fs_config_add_string ("Instance", &command->instance, child);
+		else if (strcasecmp ("Match", child->key) == 0)
 			fs_config_add_match (command, child);
 		else
 		{
@@ -330,6 +338,8 @@ static int fs_complex_config (oconfig_item_t *ci)
 	int errors;
 	int status;
 	int i;
+
+	DEBUG ("freeswitch plugin: reading config");
 
 	success = 0;
 	errors = 0;
@@ -380,6 +390,17 @@ static int fs_complex_config (oconfig_item_t *ci)
 static void fs_submit (const fs_command_t *fc,
 	const fs_match_t *fm, const cu_match_value_t *fmv)
 {
+	DEBUG ("freeswitch plugin: in fs_submit");
+
+	DEBUG ("fc->instance");
+	DEBUG (fc->instance);
+
+	DEBUG ("fm->type");
+	DEBUG (fm->type);
+
+	DEBUG ("fmv->value");
+	DEBUG (fmv->value);
+
 	value_t values[1];
 	value_list_t vl = VALUE_LIST_INIT;
 
@@ -400,15 +421,22 @@ static void fs_submit (const fs_command_t *fc,
 
 static int fs_read_command (fs_command_t *fc)
 {
+	DEBUG ("freeswitch plugin: in fs_read_command");
+
 	fs_match_t *fm;
 	int status;
 
+	/* can't the following be done nicer ? */
+	char *line;
+	line = (char *) malloc (strlen(fc->line)+2);
+	snprintf(line, strlen(fc->line)+2, "%s\n\n", fc->line);
+	esl_send_recv(&esl_handle, line);
+
 	fc->buffer_fill = 0;
-	esl_send_recv(&esl_handle, fc->line); /////////////////// NOTICE NO \n\n IS GIVEN AFTER fc->line !!!!!!!!!!!!!!!!!! THIS WON'T WORK!!!!!!!!!!
 
 	if (esl_handle.last_sr_event && esl_handle.last_sr_event->body)
 	{
-		DEBUG ("OUTPUT FROM FS:\n%s\n\n", esl_handle.last_sr_event->body);
+		DEBUG ("freeswitch plugin: output from esl (truncated):\n%s\n\n", esl_handle.last_sr_event->body);
 		sfree(fc->buffer);
 		fc->buffer = strdup(esl_handle.last_sr_event->body);
 		fc->buffer_fill = 1; // ??
@@ -441,6 +469,8 @@ static int fs_read_command (fs_command_t *fc)
 static int fs_read (void)
 {
 	fs_command_t *fc;
+
+	DEBUG ("freeswitch plugin: read poll");
 
 	for (fc = fs_commands_g; fc != NULL; fc = fc->next)
 		fs_read_command (fc);
@@ -481,7 +511,7 @@ static int fs_init (void)
 	if (fs_pass == NULL) fs_pass = FS_DEF_PASS;
 
 	/* Connect to FreeSWITCH over ESL */
-	DEBUG ("Making ESL connection to %s %s %s\n", fs_host, fs_port, fs_pass);
+	DEBUG ("freeswitch plugin: making ESL connection to %s %s %s\n", fs_host, fs_port, fs_pass);
 	esl_connect(&esl_handle, fs_host, atoi(fs_port), fs_pass);
 
 	/* Start a seperate thread for incoming events here */
@@ -492,6 +522,7 @@ static int fs_init (void)
 
 static int fs_shutdown (void)
 {
+	DEBUG ("freeswitch plugin: disconnecting");
 	esl_disconnect(&esl_handle);
 	return (0);
 } /* int fs_shutdown */

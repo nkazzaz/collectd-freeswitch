@@ -315,7 +315,7 @@ if BUILD_PLUGIN_FREESWITCH
 pkglib_LTLIBRARIES += freeswitch.la
 freeswitch_la_SOURCES = freeswitch.c
 freeswitch_la_LDFLAGS = -module -avoid-version
-freeswitch_la_LIBADD = -lesl -L.
+freeswitch_la_LIBADD = -lesl -Llibesl
 collectd_LDADD += "-dlopen" freeswitch.la
 collectd_DEPENDENCIES += freeswitch.la
 endif

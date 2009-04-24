@@ -52,6 +52,8 @@ src/libcollectdclient/.libs
 src/libcollectdclient/*.la
 src/libcollectdclient/*.lo
 src/libcollectdclient/lcc_features.h
+src/libesl/*.a
+src/libesl/*.o
 src/libiptc/.libs
 src/libiptc/*.la
 src/libiptc/*.lo

@@ -419,7 +419,7 @@ static void fs_submit (const fs_command_t *fc,
 	DEBUG (fm->type);
 
 	DEBUG ("mv->value");
-	//DEBUG (mv->value);
+	DEBUG (mv->value);
 
 	value_t values[1];
 	value_list_t vl = VALUE_LIST_INIT;
@@ -448,8 +448,8 @@ static int fs_read_command (fs_command_t *fc)
 
 	/* can't the following be done nicer ? */
 	char *line;
-	line = (char *) malloc (strlen(fc->line)+2);
-	snprintf(line, strlen(fc->line)+2, "%s\n\n", fc->line);
+	line = (char *) malloc (strlen(fc->line)+3);
+	snprintf(line, strlen(fc->line)+3, "%s\n\n", fc->line);
 	esl_send_recv(&esl_handle, line);
 
 	fc->buffer_fill = 0;

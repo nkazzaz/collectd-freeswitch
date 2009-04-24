@@ -132,8 +132,6 @@ static void fs_command_free (fs_command_t *fc)
 
 static int fs_config_add_match_dstype (int *dstype_ret, oconfig_item_t *ci)
 {
-	DEBUG ("freeswitch plugin: in fs_config_add_match_dstype");
-
 	int dstype;
 
 	if ((ci->values_num != 1) || (ci->values[0].type != OCONFIG_TYPE_STRING))
@@ -186,8 +184,6 @@ static int fs_config_add_match_dstype (int *dstype_ret, oconfig_item_t *ci)
 
 static int fs_config_add_match (fs_command_t *fs_command, oconfig_item_t *ci)
 {
-	DEBUG ("freeswitch plugin: in fs_config_add_match");
-
 	fs_match_t *fs_match;
 	int status;
 	int i;
@@ -280,8 +276,6 @@ static int fs_config_add_match (fs_command_t *fs_command, oconfig_item_t *ci)
 
 static int fs_config_add_command (oconfig_item_t *ci)
 {
-	DEBUG ("freeswitch plugin: in fs_config_add_command");
-
 	fs_command_t *command;
 	int status;
 	int i;
@@ -359,8 +353,6 @@ static int fs_complex_config (oconfig_item_t *ci)
 	int status;
 	int i;
 
-	DEBUG ("freeswitch plugin: reading config");
-
 	success = 0;
 	errors = 0;
 
@@ -419,7 +411,7 @@ static void fs_submit (const fs_command_t *fc,
 	DEBUG (fm->type);
 
 	DEBUG ("mv->value");
-	DEBUG (mv->value);
+	//DEBUG (mv->value);
 
 	value_t values[1];
 	value_list_t vl = VALUE_LIST_INIT;
@@ -441,8 +433,6 @@ static void fs_submit (const fs_command_t *fc,
 
 static int fs_read_command (fs_command_t *fc)
 {
-	DEBUG ("freeswitch plugin: in fs_read_command");
-
 	fs_match_t *fm;
 	int status;
 
@@ -490,8 +480,6 @@ static int fs_read_command (fs_command_t *fc)
 static int fs_read (void)
 {
 	fs_command_t *fc;
-
-	DEBUG ("freeswitch plugin: read poll");
 
 	for (fc = fs_commands_g; fc != NULL; fc = fc->next)
 		fs_read_command (fc);

@@ -69,7 +69,7 @@ struct fs_command_s
 	char *line;		// "api sofia status profile res-public"
 	char *instance;		// "profile-sofia-res-public"
 	char *buffer;		// <output from esl command as a char*>
-	size_t buffer_size;	// sizeof(*buffer)
+	size_t buffer_size;	// strlen(*buffer)+3
 	size_t buffer_fill;	// 0 or 1
 	fs_match_t *matches;
 	fs_command_t *next;
@@ -444,10 +444,6 @@ static int fs_read_command (fs_command_t *fc)
 	for (fm = fc->matches; fm != NULL; fm = fm->next)
 	{
 		cu_match_value_t *mv;
-
-printf("BUFFER SIZE = %lu\n", fc->buffer_size);
-
-printf("### Trying match\n");
 
 		status = match_apply (fm->match, fc->buffer);
 		if (status != 0)

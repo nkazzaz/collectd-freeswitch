@@ -509,7 +509,11 @@ static int fs_init (void)
 
 	/* Connect to FreeSWITCH over ESL */
 	DEBUG ("freeswitch plugin: making ESL connection to %s %s %s\n", fs_host, fs_port, fs_pass);
-	esl_connect(&esl_handle, fs_host, atoi(fs_port), fs_pass);
+	if (esl_connect(&esl_handle, fs_host, atoi(fs_port), fs_pass))
+	{
+		ERROR ("freeswitch plugin: connection failed [%s]", esl_handle.err);
+		return (-1);
+	}
 
 	/* Start a seperate thread for incoming events here */
 	//esl_thread_create_detached(msg_thread_run, &esl_handle);

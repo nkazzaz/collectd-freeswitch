@@ -24,7 +24,7 @@
 #include "common.h"
 #include "plugin.h"
 #include "utils_match.h"
-#include <esl.h>
+#include "esl.h"
 
 #define FS_DEF_HOST "127.0.0.1"
 #define FS_DEF_PORT "8021"
@@ -38,10 +38,10 @@
  *		<Command "api sofia status profile res-public">
  *			Instance "profile-sofia-res-public"
  *			<Match>
- *				Regex "\\<CALLS-IN\s+(\d+)\\>"
- *				DSType "CounterInc"
- *				Type "counter"
  *				Instance "calls-in"
+ *				Regex "CALLS-IN\\s+([0-9]+)"
+ *				DSType "GaugeLast"
+ *				Type "gauge"
  *			</Match>
  *		</Command>
  *	</Plugin>
@@ -402,17 +402,6 @@ static int fs_complex_config (oconfig_item_t *ci)
 static void fs_submit (const fs_command_t *fc,
 	const fs_match_t *fm, const cu_match_value_t *mv)
 {
-	DEBUG ("freeswitch plugin: in fs_submit");
-
-	DEBUG ("fc->instance");
-	DEBUG (fc->instance);
-
-	DEBUG ("fm->type");
-	DEBUG (fm->type);
-
-	DEBUG ("mv->value");
-	//DEBUG (mv->value);
-
 	value_t values[1];
 	value_list_t vl = VALUE_LIST_INIT;
 
@@ -446,7 +435,6 @@ static int fs_read_command (fs_command_t *fc)
 
 	if (esl_handle.last_sr_event && esl_handle.last_sr_event->body)
 	{
-		DEBUG ("freeswitch plugin: output from esl (truncated):\n%s\n\n", esl_handle.last_sr_event->body);
 		sfree(fc->buffer);
 		fc->buffer = strdup(esl_handle.last_sr_event->body);
 		fc->buffer_size = strlen(fc->buffer);
@@ -456,6 +444,10 @@ static int fs_read_command (fs_command_t *fc)
 	for (fm = fc->matches; fm != NULL; fm = fm->next)
 	{
 		cu_match_value_t *mv;
+
+printf("BUFFER SIZE = %lu\n", fc->buffer_size);
+
+printf("### Trying match\n");
 
 		status = match_apply (fm->match, fc->buffer);
 		if (status != 0)

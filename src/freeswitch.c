@@ -524,7 +524,7 @@ static int fs_init (void)
 static int fs_shutdown (void)
 {
 	DEBUG ("freeswitch plugin: disconnecting");
-	esl_disconnect(&esl_handle);
+	if (esl_handle.connected) esl_disconnect(&esl_handle);
 	fs_command_free (fs_commands_g);
 	fs_commands_g = NULL;
 	return (0);
